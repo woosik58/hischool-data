@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3학년 진학희망 조회부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#1B2A4A;
+    --ink-soft:#3D4B6B;
+    --ink-faint:#7C879C;
+    --paper:#F7F3EA;
+    --paper-line:#DFD8C6;
+    --gold:#B5842A;
+    --gold-soft:#F1E4C6;
+    --rose:#A64B4B;
+    --rose-soft:#F3E2E0;
+    --good:#2E7D5B;
+    --good-soft:#DEEFE5;
+    --white:#FFFEFB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'PretendardVariable','Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:36px 20px 80px; }
+
+  /* ---------- header ---------- */
+  header{ margin-bottom:24px; border-bottom:2px solid var(--ink); padding-bottom:16px; }
+  .eyebrow{ font-size:13px; color:var(--ink-soft); letter-spacing:0.02em; margin-bottom:6px; }
+  .hd-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  h1{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:28px; margin:0; letter-spacing:-0.01em; }
+  .sub{ font-size:14px; color:var(--ink-soft); margin-top:8px; line-height:1.5; }
+  .sync-row{ display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .sync-status{ font-size:12px; color:var(--ink-soft); }
+  .sync-status.error{ color:var(--rose); }
+  .sync-status.ok{ color:#4A7A4A; }
+  .mini-btn{
+    appearance:none; font-family:inherit; font-size:12px; font-weight:600;
+    background:var(--white); border:1px solid var(--paper-line); color:var(--ink-soft);
+    border-radius:20px; padding:4px 11px; cursor:pointer;
+  }
+  .mini-btn:hover{ border-color:var(--gold); color:var(--ink); }
+
+  .admin-btn{
+    appearance:none; font-family:inherit; font-size:12.5px; font-weight:600;
+    background:var(--white); border:1px solid var(--ink); color:var(--ink);
+    border-radius:20px; padding:6px 14px; cursor:pointer; white-space:nowrap; flex-shrink:0;
+  }
+  .admin-btn.on{ background:var(--gold); border-color:var(--gold); color:var(--white); }
+  .admin-login{ display:flex; gap:8px; align-items:center; margin:0 0 18px; flex-wrap:wrap; }
+  .admin-login input{ font-family:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--paper-line); border-radius:3px; }
+  .admin-login button{ font-family:inherit; font-size:13px; padding:8px 14px; border:1px solid var(--ink); background:var(--ink); color:var(--white); border-radius:3px; cursor:pointer; }
+  .admin-msg{ font-size:12.5px; color:var(--rose); }
+  .admin-note{
+    display:none; background:var(--gold-soft); border:1px solid #E4C688; color:#5A430F;
+    border-radius:4px; padding:9px 12px; font-size:12.8px; font-weight:600; margin-bottom:16px;
+  }
+  .admin-note.show{ display:block; }
+
+  /* ---------- tabs ---------- */
+  .tabs{ display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid var(--paper-line); overflow-x:auto; }
+  .tab-btn{
+    appearance:none; background:none; border:none; font-family:inherit; font-size:15px; font-weight:600;
+    color:var(--ink-soft); padding:10px 4px; margin-right:22px; cursor:pointer; white-space:nowrap;
+    border-bottom:2px solid transparent; transform:translateY(1px);
+  }
+  .tab-btn.active{ color:var(--ink); border-bottom-color:var(--gold); }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  /* ---------- search ---------- */
+  .search-box{ margin-bottom:6px; }
+  .search-box input{
+    width:100%; font-family:inherit; font-size:17px; padding:14px 16px;
+    border:1.5px solid var(--ink); border-radius:3px; background:var(--white); color:var(--ink); outline:none;
+  }
+  .search-box input:focus{ border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-soft); }
+  .hint{ font-size:12.5px; color:var(--ink-soft); margin:8px 2px 18px; }
+
+  /* ---------- rows ---------- */
+  .result-list{ border-top:1px solid var(--ink); }
+  .result-row{ padding:13px 4px; border-bottom:1px solid var(--paper-line); }
+  .rr-main{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .result-left{ display:flex; align-items:baseline; gap:9px; min-width:0; flex-wrap:wrap; }
+  .rr-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .badge{
+    font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-soft);
+    background:var(--white); border:1px solid var(--paper-line); border-radius:3px; padding:2px 7px; white-space:nowrap;
+  }
+  .name{ font-size:17px; font-weight:600; white-space:nowrap; }
+  .pct{ font-size:13.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .gender-tag{ font-size:11.5px; font-weight:600; padding:2px 6px; border-radius:3px; flex-shrink:0; }
+  .gender-tag.m{ background:#DCE6F5; color:#2B4C7E; }
+  .gender-tag.f{ background:#F5E3EC; color:#8A3B63; }
+  .school-tag{
+    font-size:14.5px; font-weight:600; color:var(--ink); background:var(--gold-soft);
+    padding:5px 12px; border-radius:3px; white-space:nowrap;
+  }
+  .school-tag.empty{ background:var(--rose-soft); color:var(--rose); font-weight:500; }
+  .res-line{ margin-top:8px; font-size:12.8px; color:var(--ink-soft); line-height:1.7; }
+  .res-line b{ color:var(--ink); }
+  .rb{ display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:20px; background:#ECE7D8; color:var(--ink-soft); margin-left:3px; }
+  .rb.pass{ background:var(--good-soft); color:var(--good); }
+  .rb.fail{ background:var(--rose-soft); color:var(--rose); }
+  .empty-msg{ padding:40px 4px; text-align:center; color:var(--ink-soft); font-size:14.5px; }
+  .placeholder{ padding:56px 4px; text-align:center; color:var(--ink-soft); font-size:14.5px; line-height:1.7; }
+  .edit-btn{
+    font-family:inherit; font-size:12px; padding:4px 10px; border:1px solid var(--paper-line);
+    background:var(--white); border-radius:3px; cursor:pointer; color:var(--ink-soft); flex-shrink:0;
+  }
+
+  /* ---------- chips / pills ---------- */
+  .school-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+  .school-chip{
+    font-family:inherit; font-size:14px; background:var(--white); border:1px solid var(--ink);
+    border-radius:20px; padding:7px 14px; cursor:pointer; color:var(--ink); display:flex; align-items:center; gap:6px;
+  }
+  .school-chip .cnt{ font-size:12px; color:var(--white); background:var(--ink); border-radius:10px; padding:1px 7px; font-variant-numeric:tabular-nums; }
+  .school-chip.active{ background:var(--ink); color:var(--white); }
+  .school-chip.active .cnt{ background:var(--gold); }
+  .detail-header{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:4px; }
+  .detail-header h2{ font-family:'Noto Serif KR',serif; font-size:20px; margin:0; }
+  .detail-sub{ font-weight:400; font-size:15px; color:var(--ink-soft); }
+  .sort-toggle{ display:inline-flex; gap:2px; background:var(--white); border:1px solid var(--paper-line); border-radius:20px; padding:2px; }
+  .sort-toggle button{ appearance:none; border:none; background:none; font-family:inherit; font-size:12.5px; padding:5px 11px; border-radius:16px; cursor:pointer; color:var(--ink-soft); }
+  .sort-toggle button.active{ background:var(--ink); color:var(--white); }
+  .cat-pills{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:22px; padding-bottom:14px; border-bottom:1px solid var(--paper-line); }
+  .cat-pill{
+    appearance:none; font-family:inherit; font-size:13.5px; font-weight:600; background:var(--white);
+    border:1px solid var(--paper-line); color:var(--ink-soft); border-radius:4px; padding:7px 12px; cursor:pointer; display:flex; gap:6px; align-items:baseline;
+  }
+  .cat-pill .n{ font-size:12px; font-variant-numeric:tabular-nums; color:var(--gold); }
+  .cat-pill.active{ background:var(--ink); border-color:var(--ink); color:var(--white); }
+  .cat-pill.active .n{ color:var(--gold-soft); }
+  .cat-section{ margin-bottom:22px; }
+  .cat-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; border-bottom:1px solid var(--ink); padding-bottom:6px; margin-bottom:10px;
+  }
+  .cat-meta{ font-family:'PretendardVariable','Pretendard',sans-serif; font-weight:400; font-size:12.5px; color:var(--ink-soft); }
+  .cat-section .school-grid{ margin-bottom:0; }
+  .cat-badge{ font-family:'PretendardVariable','Pretendard',sans-serif; font-size:11.5px; font-weight:600; background:var(--gold-soft); color:var(--ink); border-radius:3px; padding:2px 7px; vertical-align:middle; }
+
+  /* ---------- edit / add forms ---------- */
+  .edit-form{ padding:14px 12px; background:var(--gold-soft); border-radius:4px; margin:4px 0; }
+  .ef-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ef-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px 10px; }
+  .ef-f{ display:flex; flex-direction:column; gap:3px; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+  .ef-f input, .ef-f select{ font-family:inherit; font-size:13.5px; font-weight:400; padding:6px 8px; border:1px solid var(--paper-line); border-radius:3px; background:var(--white); color:var(--ink); width:100%; }
+  .ef-sec{ grid-column:1 / -1; font-size:12px; font-weight:700; color:var(--gold); border-bottom:1px solid #E4C688; padding-bottom:3px; margin-top:6px; }
+  .ef-sec:first-child{ margin-top:0; }
+  .ef-f input:disabled, .ef-f select:disabled{ background:#EDE7D3; color:#9A9480; cursor:not-allowed; }
+  .ef-f.ef-check{ flex-direction:row; align-items:center; gap:6px; font-weight:600; align-self:end; padding-bottom:7px; }
+  .ef-f.ef-check input{ width:auto; }
+  .ef-hint{ grid-column:1 / -1; font-size:12.5px; color:#5A430F; background:rgba(255,255,255,.6); border-radius:3px; padding:7px 10px; }
+  .ef-actions{ display:flex; gap:8px; margin-top:12px; }
+  .ef-actions button, .delete-btn{ font-family:inherit; font-size:12.5px; padding:6px 14px; border-radius:3px; border:1px solid var(--ink); cursor:pointer; }
+  .save-btn{ background:var(--ink); color:var(--white); }
+  .cancel-btn{ background:var(--white); color:var(--ink-soft); }
+  .delete-btn{ background:var(--rose); border-color:var(--rose); color:var(--white); }
+  .add-form{ margin-top:24px; padding:16px; border:1.5px dashed var(--paper-line); border-radius:6px; }
+  .add-form h3{ font-family:'Noto Serif KR',serif; font-size:15px; margin:0 0 12px; }
+  .add-form-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .add-form-row input, .add-form-row select{ font-family:inherit; font-size:13.5px; padding:7px 9px; border:1px solid var(--paper-line); border-radius:3px; }
+  .add-form-row button{ font-family:inherit; font-size:13px; padding:7px 16px; border-radius:3px; border:1px solid var(--ink); background:var(--ink); color:var(--white); cursor:pointer; }
+
+  /* ---------- 원서 결과 ---------- */
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+  .stat-grid.three{ grid-template-columns:repeat(3,1fr); }
+  .stat-card{ background:var(--white); border:1px solid var(--paper-line); border-radius:6px; padding:16px 14px; }
+  .stat-card .num{ font-family:'Noto Serif KR',serif; font-size:26px; font-weight:700; color:var(--ink); line-height:1.15; }
+  .stat-card .num.small{ font-size:18px; }
+  .stat-card .label{ font-size:12.5px; color:var(--ink-faint); margin-top:6px; }
+  .filter-row{ margin-bottom:14px; }
+  .filter-label{ font-size:12px; font-weight:700; color:var(--ink-soft); margin:0 0 6px; }
+  .rs-card{ padding:14px 4px; border-bottom:1px solid var(--paper-line); }
+  .rs-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
+  .rs-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .rs-cell{ background:var(--white); border:1px solid var(--paper-line); border-radius:4px; padding:8px 10px; display:flex; flex-direction:column; gap:2px; }
+  .rs-cell .flabel{ font-size:11px; font-weight:700; color:var(--ink-faint); }
+  .rs-cell .fval{ font-size:13.5px; font-weight:600; }
+  .rs-cell .fval.muted{ color:var(--ink-faint); font-weight:500; }
+  .rs-cell.final.ok{ background:var(--good-soft); border-color:#BBDCC9; }
+  .rs-cell.final.ok .fval{ color:var(--good); }
+  .gpa-tag{ font-size:12px; color:var(--ink-soft); background:#ECE7D8; padding:2px 8px; border-radius:20px; }
+
+  /* ---------- stats ---------- */
+  .sub-tabs{ display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+  .sub-tabs button{ appearance:none; font-family:inherit; font-size:13.5px; font-weight:600; background:var(--white); border:1px solid var(--paper-line); color:var(--ink-soft); border-radius:20px; padding:8px 16px; cursor:pointer; }
+  .sub-tabs button.active{ background:var(--ink); border-color:var(--ink); color:var(--white); }
+  .stat-view{ display:none; }
+  .stat-view.active{ display:block; }
+  .box{ background:var(--white); border:1px solid var(--paper-line); border-radius:6px; padding:18px; margin-bottom:16px; }
+  .box h2{ font-family:'Noto Serif KR',serif; font-size:16px; margin:0 0 3px; }
+  .box .bsub{ font-size:12.5px; color:var(--ink-faint); margin:0 0 14px; }
+  .chart-wrap{ position:relative; height:260px; }
+  .chart-wrap.tall{ height:340px; }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  table.simple{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.simple th, table.simple td{ text-align:left; padding:8px 8px; border-bottom:1px solid var(--paper-line); }
+  table.simple th{ color:var(--ink-faint); font-weight:600; font-size:12.5px; }
+  table.simple td.num, table.simple th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  table.simple td.num{ font-weight:600; }
+
+  footer{ margin-top:44px; padding-top:16px; border-top:1px solid var(--paper-line); font-size:12px; color:var(--ink-soft); text-align:center; line-height:1.7; }
+
+  @media (max-width:640px){
+    .wrap{ padding:26px 14px 60px; }
+    h1{ font-size:22px; }
+    .name{ font-size:15.5px; }
+    .school-tag{ font-size:13px; padding:4px 9px; }
+    .rr-main{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+    .stat-grid.three{ grid-template-columns:repeat(2,1fr); }
+    .two-col{ grid-template-columns:1fr; }
+    .ef-grid{ grid-template-columns:repeat(2,1fr); }
+    .rs-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">관동중학교 3학년 · 2026학년도 2학기</div>
+    <div class="hd-row">
+      <h1>진학희망 조회부</h1>
+      <button id="adminToggleBtn" class="admin-btn">관리자 모드</button>
+    </div>
+    <div class="sub">이름·학급·성적대·고등학교별 희망 현황과 고입 원서 접수·합격 결과를 한곳에서 볼 수 있습니다.</div>
+    <div class="sync-row">
+      <span id="syncStatus" class="sync-status">데이터를 불러오는 중…</span>
+      <button id="refreshBtn" class="mini-btn">새로고침</button>
+    </div>
+  </header>
+
+  <div id="adminPanel" class="admin-login" style="display:none;">
+    <input type="password" id="adminPasswordInput" placeholder="관리자 비밀번호">
+    <button id="adminLoginBtn">확인</button>
+    <span id="adminLoginMsg" class="admin-msg"></span>
+  </div>
+  <div id="adminNote" class="admin-note">관리자 모드가 켜져 있습니다. 각 학생의 [수정] 버튼으로 값을 고치고 저장하면 구글 시트에 바로 반영됩니다.</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="search">이름으로 찾기</button>
+    <button class="tab-btn" data-tab="class">학급별 명단</button>
+    <button class="tab-btn" data-tab="band">성적대별 명단</button>
+    <button class="tab-btn" data-tab="school">고등학교별 명단</button>
+    <button class="tab-btn" data-tab="result">원서 결과</button>
+    <button class="tab-btn" data-tab="stats">통계</button>
+  </div>
+
+  <!-- 이름으로 찾기 -->
+  <div class="panel active" id="panel-search">
+    <div class="search-box"><input type="text" id="searchInput" placeholder="학생 이름을 입력하세요 (예: 김도연)" autocomplete="off"></div>
+    <div class="hint">이름 일부만 입력해도 검색됩니다. 반-번호(예: 3-12)로도 검색할 수 있어요.</div>
+    <div class="result-list" id="resultList"></div>
+  </div>
+
+  <!-- 학급별 -->
+  <div class="panel" id="panel-class">
+    <div class="school-grid" id="classGrid"></div>
+    <div id="classDetail"><div class="placeholder">위에서 학급을 선택하면<br>학급 전체 명단이 여기 표시됩니다.</div></div>
+    <div id="addStudentArea"></div>
+  </div>
+
+  <!-- 성적대별 -->
+  <div class="panel" id="panel-band">
+    <div class="hint" style="margin-top:0;">석차백분율을 10%씩 구간으로 나눈 명단입니다. 숫자가 낮을수록 상위권입니다.</div>
+    <div class="school-grid" id="bandGrid"></div>
+    <div id="bandDetail"><div class="placeholder">위에서 성적 구간을 선택하면<br>해당 구간 학생 명단이 여기 표시됩니다.</div></div>
+  </div>
+
+  <!-- 고등학교별 -->
+  <div class="panel" id="panel-school">
+    <div id="schoolGrid"></div>
+    <div id="schoolDetail"><div class="placeholder">위에서 고등학교를 선택하면<br>희망 학생 명단이 여기 표시됩니다.</div></div>
+  </div>
+
+  <!-- 원서 결과 -->
+  <div class="panel" id="panel-result">
+    <div class="stat-grid" id="resultCards"></div>
+    <div class="search-box"><input type="text" id="resultSearch" placeholder="이름으로 찾기 (선택)" autocomplete="off" style="font-size:15px; padding:10px 14px;"></div>
+    <div class="filter-row" style="margin-top:14px;">
+      <p class="filter-label">학급</p>
+      <div class="school-grid" id="resClassChips" style="margin-bottom:10px;"></div>
+      <p class="filter-label">진행 상태</p>
+      <div class="school-grid" id="resStatusChips" style="margin-bottom:6px;"></div>
+    </div>
+    <div class="hint" style="margin-top:0;">1희망은 처음 적어 낸 희망 학교, 1차·2차는 실제로 원서를 접수한 학교와 결과, 최종은 진학이 확정된 학교입니다.</div>
+    <div class="result-list" id="resultCardList"></div>
+  </div>
+
+  <!-- 통계 -->
+  <div class="panel" id="panel-stats">
+    <div class="sub-tabs" id="statTabs">
+      <button type="button" class="active" data-stat="hope">희망학교 통계</button>
+      <button type="button" data-stat="final">합격한 학교 통계</button>
+    </div>
+
+    <div class="stat-view active" id="stat-view-hope">
+      <div class="stat-grid" id="statCardsHope"></div>
+      <div class="box">
+        <h2>학교 유형별 희망 인원</h2>
+        <p class="bsub">희망 유형이 입력되어 있으면 그 값을, 없으면 1희망 학교 이름으로 구분했습니다.</p>
+        <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
+      </div>
+      <div class="two-col">
+        <div class="box">
+          <h2>희망 학교 Top 10</h2>
+          <p class="bsub">1희망 학교 기준입니다.</p>
+          <div class="chart-wrap tall"><canvas id="hopeSchoolChart"></canvas></div>
+        </div>
+        <div class="box">
+          <h2>반별 희망 응답 현황</h2>
+          <p class="bsub">반별 전체 인원과 희망 학교 응답 인원입니다.</p>
+          <table class="simple" id="classTableHope">
+            <thead><tr><th>반</th><th class="num">인원</th><th class="num">남</th><th class="num">여</th><th class="num">응답</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-view" id="stat-view-final">
+      <div class="stat-grid" id="statCardsFinal"></div>
+      <div class="two-col">
+        <div class="box">
+          <h2>최종합격 학교 Top 10</h2>
+          <p class="bsub">최종합격이 확정된 학교 기준입니다.</p>
+          <div class="chart-wrap tall"><canvas id="finalSchoolChart"></canvas></div>
+        </div>
+        <div class="box">
+          <h2>최종합격 학교명 · 학생 수</h2>
+          <p class="bsub">최종합격이 확정된 모든 학교와 인원입니다.</p>
+          <table class="simple" id="finalSchoolTable">
+            <thead><tr><th>학교명</th><th class="num">남</th><th class="num">여</th><th class="num">학생 수</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="box">
+        <h2>반별 최종합격 현황</h2>
+        <p class="bsub">반별 전체 인원과 최종합격 확정 인원입니다.</p>
+        <table class="simple" id="classTableFinal">
+          <thead><tr><th>반</th><th class="num">인원</th><th class="num">최종합격</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>석차백분율은 8/21 산출 자료 기준입니다. · 구글시트와 실시간으로 연동됩니다.</footer>
+</div>
+
+<datalist id="schoolList"></datalist>
+
+<script>
+// 조회부 시트에 연결된 Apps Script 웹앱 주소 (Code.gs 를 같은 스크립트에 붙여 넣고 '새 버전'으로 배포하면 주소는 그대로 유지됩니다)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziWEUksDud-TQYybcDnrTA9X6TqGIvcYzoch1jyy3sPNV0LJ8KXfSo6rQBhGrljX5x/exec";
+
+const $ = id => document.getElementById(id);
+let DATA = [];
+let adminMode = false;
+let adminPassword = "";
+
+const UNDECIDED = new Set(['', '미정', '없음', '-', '해당없음', '미제출', '모르겠다']);
+const isUndecided = v => UNDECIDED.has(String(v == null ? '' : v).trim());
+const isPass = v => { const t = String(v || ''); return /합격/.test(t) && !/불합격/.test(t); };
+const isFail = v => /불합격/.test(String(v || ''));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function normalize(d){
+  const str = v => v == null ? '' : String(v).trim();
+  let pct = (d.pct === null || d.pct === undefined || d.pct === '') ? null : Number(d.pct);
+  if(pct !== null && !isFinite(pct)) pct = null;
+  const o = {
+    ban: Number(d.ban), num: Number(d.num), name: str(d.name), gender: str(d.gender), pct: pct,
+    gpa: str(d.gpa), school: str(d.school), type: str(d.type),
+    apply1: str(d.apply1), result1: str(d.result1), apply2: str(d.apply2), result2: str(d.result2),
+    finalSchool: str(d.finalSchool), finalResult: str(d.finalResult)
+  };
+  // 최종합격 칸이 비어 있어도 1차(또는 2차) 합격이면 최종합격으로 보여 줍니다. (시트에 직접 입력한 경우도 같은 규칙)
+  if(!o.finalSchool && !o.finalResult){
+    const e = expectedFinal(o.apply1, o.result1, o.apply2, o.result2);
+    if(e.school){ o.finalSchool = e.school; o.finalResult = e.result; }
+  }
+  return o;
+}
+// 1차 합격 → 1차 학교가 최종합격, 1차 불합격 + 2차 합격 → 2차 학교가 최종합격
+function expectedFinal(a1, r1, a2, r2){
+  if(a1 && isPass(r1)) return {school: a1, result: '합격'};
+  if(a1 && isFail(r1) && a2 && isPass(r2)) return {school: a2, result: '합격'};
+  return {school: '', result: ''};
+}
+const byBanNum = (a, b) => a.ban - b.ban || a.num - b.num;
+const byPct = (a, b) => (a.pct === null ? 999 : a.pct) - (b.pct === null ? 999 : b.pct) || byBanNum(a, b);
+const finalPassed = s => !!s.finalSchool && isPass(s.finalResult);
+function statusOf(s){
+  if(finalPassed(s)) return 'done';
+  if(s.apply1 || s.apply2 || s.finalSchool) return 'wait';
+  return 'none';
+}
+
+// ---------- 학교 급별 분류 ----------
+const CAT_LIST = [
+  {key:'sp', label:'특목고(과고/예술고/외고)', short:'특목고'},
+  {key:'me', label:'마이스터고', short:'마이스터고'},
+  {key:'vo', label:'특성화고', short:'특성화고'},
+  {key:'ge', label:'일반고', short:'일반고'},
+  {key:'et', label:'각종학교 및 기타', short:'각종·기타'}
+];
+const SCHOOL_CAT_MAP = {
+  '경남외고':'sp','김해외고':'sp','창원과학고':'sp','대구과학고등학교':'sp','부산예술고등학교':'sp','충남예술고등학교':'sp',
+  '한국나노마이스터고':'me','한국국제통상마이스터고등학교':'me','공군항공과학고':'me','삼천포공고':'me','부산기계공업고등학교':'me','부산해사고':'me',
+  '생과고':'vo','건설고':'vo','경남관광고':'vo','경남항공고':'vo','창원기계공고':'vo','경북항공고등학교':'vo','부산컴퓨터과학고등학교':'vo','부산조리고등학교':'vo','거제여상고':'vo','김해한일여자고등학교':'vo','진영제일고':'vo','창녕슈퍼텍고등학교':'vo','부경보건고':'vo',
+  '대청고':'ge','율하고':'ge','수남고':'ge','삼문고':'ge','장유고':'ge','가야고':'ge','거창고':'ge','거창대성고등학교':'ge','김해여고':'ge','남해해성고':'ge','밀양동명고':'ge','남산고등학교':'ge','모계고':'ge',
+  '미제출':'et','김해금곡고':'et','없음':'et','모르겠다':'et','김해시 내  고등학교':'et','한조고':'et','생과고,수남고':'et'
+};
+function catOf(school){
+  const s = (school || '').trim();
+  if(SCHOOL_CAT_MAP[s]) return SCHOOL_CAT_MAP[s];
+  if(/마이스터/.test(s)) return 'me';
+  if(/외고|외국어고|과학고|과고|예술고|국제고|체육고/.test(s)) return 'sp';
+  if(/공고|공업|상고|여상|관광고|항공고|조리|컴퓨터|건설|생과고|생명과학|정보고|산업고|기계|보건/.test(s)) return 'vo';
+  return 'et';
+}
+const catInfo = key => CAT_LIST.find(c => c.key === key);
+function typeOf(s){
+  if(s.type){
+    const m = s.type.match(/^\d+\.\s*(.+)$/);
+    return (m ? m[1] : s.type).replace(/\(.*\)/, '').trim();
+  }
+  return isUndecided(s.school) ? '미응답' : catInfo(catOf(s.school)).short;
+}
+
+// ---------- 상태 / 통신 ----------
+function setStatus(msg, cls){
+  const el = $('syncStatus');
+  el.textContent = msg;
+  el.className = 'sync-status' + (cls ? ' ' + cls : '');
+}
+
+async function readJson(res){
+  const text = await res.text();
+  try{ return JSON.parse(text); }
+  catch(e){
+    throw new Error('스크립트 주소가 데이터 대신 웹페이지를 돌려줬습니다. Apps Script 배포(액세스 권한: 모든 사용자)와 승인 상태, 주소(SCRIPT_URL)를 확인하세요.');
+  }
+}
+
+async function loadData(silent){
+  if(!silent) setStatus('데이터를 불러오는 중…', '');
+  try{
+    const res = await fetch(SCRIPT_URL);
+    const json = await readJson(res);
+    if(!json.ok) throw new Error(json.error || '불러오기 실패');
+    DATA = json.data.map(normalize);
+    setStatus('구글시트와 연결됨 · 총 ' + DATA.length + '명 · ' + new Date().toLocaleTimeString('ko-KR', {hour12:false}) + ' 기준', 'ok');
+    renderAll();
+  }catch(err){
+    setStatus('데이터를 불러오지 못했습니다. SCRIPT_URL 설정을 확인해주세요. (' + err.message + ')', 'error');
+  }
+}
+
+async function callApi(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({password: adminPassword}, payload))
+  });
+  const json = await readJson(res);
+  if(!json.ok) throw new Error(json.error || '요청이 거부되었습니다.');
+  return json;
+}
+
+async function sendUpdate(action, row){
+  setStatus('저장 중…', '');
+  try{
+    const json = await callApi({action: action, row: row});
+    if(json.data) DATA = json.data.map(normalize);
+    setStatus('저장 완료 · 구글시트와 연결됨 · 총 ' + DATA.length + '명', 'ok');
+    renderAll();
+    return true;
+  }catch(err){
+    setStatus('저장 실패: ' + err.message, 'error');
+    alert('저장 실패: ' + err.message);
+    return false;
+  }
+}
+
+function renderAll(){
+  const schools = [...new Set(DATA.flatMap(s => [s.school, s.apply1, s.apply2, s.finalSchool]).filter(v => v && !isUndecided(v)))].sort((a, b) => a.localeCompare(b, 'ko'));
+  $('schoolList').innerHTML = schools.map(n => `<option value="${esc(n)}"></option>`).join('');
+  renderResults(doSearchFilter($('searchInput').value));
+  renderChips(); renderDetail();
+  renderBandChips(); renderBandDetail();
+  renderClassChips(); renderClassDetail();
+  renderResultTab();
+  renderStats();
+}
+
+// ---------- 관리자 로그인 ----------
+$('adminToggleBtn').addEventListener('click', () => {
+  if(adminMode){
+    adminMode = false; adminPassword = '';
+    $('adminToggleBtn').classList.remove('on');
+    $('adminToggleBtn').textContent = '관리자 모드';
+    $('adminPanel').style.display = 'none';
+    $('adminNote').classList.remove('show');
+    renderAll();
+  } else {
+    $('adminPanel').style.display = $('adminPanel').style.display === 'none' ? 'flex' : 'none';
+  }
+});
+async function doAdminLogin(){
+  const pw = $('adminPasswordInput').value;
+  if(!pw){ $('adminLoginMsg').textContent = '비밀번호를 입력하세요.'; return; }
+  $('adminLoginMsg').textContent = '확인 중…';
+  adminPassword = pw;
+  try{
+    await callApi({action: 'auth'});
+    adminMode = true;
+    $('adminToggleBtn').classList.add('on');
+    $('adminToggleBtn').textContent = '관리자 모드 (켜짐)';
+    $('adminPanel').style.display = 'none';
+    $('adminNote').classList.add('show');
+    $('adminLoginMsg').textContent = '';
+    $('adminPasswordInput').value = '';
+    renderAll();
+  }catch(err){
+    adminPassword = '';
+    $('adminLoginMsg').textContent = err.message;
+  }
+}
+$('adminLoginBtn').addEventListener('click', doAdminLogin);
+$('adminPasswordInput').addEventListener('keydown', e => { if(e.key === 'Enter') doAdminLogin(); });
+$('refreshBtn').addEventListener('click', () => loadData(false));
+
+// ---------- 탭 ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    $('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+document.querySelectorAll('#statTabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#statTabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.stat-view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    $('stat-view-' + btn.dataset.stat).classList.add('active');
+  });
+});
+
+// ---------- 수정 폼 ----------
+function sel(name, val, opts){
+  const list = opts.includes(val) ? opts : opts.concat([val]);
+  return `<select name="${name}">${list.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${o === '' ? '(없음)' : esc(o)}</option>`).join('')}</select>`;
+}
+const fld = (label, control) => `<label class="ef-f"><span>${label}</span>${control}</label>`;
+const inp = (name, val, extra) => `<input name="${name}" value="${esc(val)}" ${extra || ''}>`;
+
+function editFormHtml(s){
+  const RES = ['', '합격', '불합격'];
+  const exp = expectedFinal(s.apply1, s.result1, s.apply2, s.result2);
+  const hasFinal = !!(s.finalSchool || s.finalResult);
+  const manual = hasFinal && (exp.school !== s.finalSchool || exp.result !== s.finalResult);   // 규칙과 다른 기존 값은 직접 입력 상태로 보존
+  const keep2 = !!(s.apply2 || s.result2);                                                       // 기존 2차 기록이 있으면 열어 둠
+  return `<div class="edit-form" data-key="${s.ban}-${s.num}" data-keep2="${keep2 ? 1 : 0}">
+    <div class="ef-head"><span class="badge">${s.ban}반 ${s.num}번</span><button class="delete-btn" data-act="delete">삭제</button></div>
+    <div class="ef-grid">
+      <div class="ef-sec">기본 정보</div>
+      ${fld('이름', inp('name', s.name))}
+      ${fld('성별', sel('gender', s.gender, ['남', '여']))}
+      ${fld('석차백분율', inp('pct', s.pct === null ? '' : s.pct, 'type="number" step="0.01"'))}
+      ${fld('내신성적', inp('gpa', s.gpa))}
+      ${fld('1희망 학교', inp('school', s.school, 'list="schoolList"'))}
+      ${fld('진학희망유형', inp('type', s.type))}
+      <div class="ef-sec">원서 접수 · 합격 결과</div>
+      ${fld('1차 원서접수 학교', inp('apply1', s.apply1, 'list="schoolList"'))}
+      ${fld('1차 합격여부', sel('result1', s.result1, RES))}
+      <span></span>
+      ${fld('2차 원서접수 학교 (1차 불합격 시)', inp('apply2', s.apply2, 'list="schoolList"'))}
+      ${fld('2차 합격여부', sel('result2', s.result2, RES))}
+      <span></span>
+      ${fld('최종합격 학교', inp('finalSchool', s.finalSchool, 'list="schoolList"'))}
+      ${fld('최종합격 여부', sel('finalResult', s.finalResult, RES))}
+      <label class="ef-f ef-check"><input type="checkbox" name="manual" ${manual ? 'checked' : ''}> 직접 입력</label>
+      <div class="ef-hint" data-hint></div>
+    </div>
+    <div class="ef-actions"><button class="save-btn" data-act="save">저장</button><button class="cancel-btn" data-act="cancel">취소</button></div>
+  </div>`;
+}
+
+function flowHint(a1, r1, a2, r2, manual){
+  if(manual) return "최종합격을 직접 입력하는 중입니다. (추가모집·등록포기 등 예외를 기록할 때 사용하세요)";
+  if(!a1) return "1차 원서를 접수한 학교를 입력하면 결과를 선택할 수 있어요.";
+  if(!r1) return "1차 결과(합격/불합격)를 선택하세요.";
+  if(isPass(r1)) return "1차 합격 → 최종합격이 자동으로 입력됩니다. 2차 원서는 필요 없어요.";
+  if(isFail(r1)){
+    if(!a2) return "1차 불합격 → 2차 원서를 접수한 학교를 입력하세요.";
+    if(!r2) return "2차 결과(합격/불합격)를 선택하세요. 합격하면 최종합격이 자동으로 입력됩니다.";
+    if(isPass(r2)) return "2차 합격 → 최종합격이 자동으로 입력됩니다.";
+    return "1·2차 모두 불합격입니다. 추가모집 등은 '직접 입력'으로 기록하세요.";
+  }
+  return "";
+}
+
+// 입력 상태에 맞춰 칸을 열고 닫고, 최종합격을 자동으로 채웁니다. (값을 지우지는 않고, 지우는 건 저장할 때만)
+function syncForm(form){
+  const g = n => form.querySelector(`[name="${n}"]`);
+  const a1 = g('apply1').value.trim(), r1 = g('result1'), a2 = g('apply2'), r2 = g('result2');
+  const fs = g('finalSchool'), fr = g('finalResult'), manual = g('manual').checked;
+
+  r1.disabled = !a1;
+  if(!a1) r1.value = '';
+  const open2 = isFail(r1.value) || form.dataset.keep2 === '1';
+  a2.disabled = !open2;
+  if(!a2.value.trim()) r2.value = '';
+  r2.disabled = !open2 || !a2.value.trim();
+
+  if(!manual){
+    const e = expectedFinal(a1, r1.value, a2.value.trim(), r2.value);
+    fs.value = e.school;
+    fr.value = e.result;
+  }
+  fs.disabled = !manual;
+  fr.disabled = !manual;
+  form.querySelector('[data-hint]').textContent = flowHint(a1, r1.value, a2.value.trim(), r2.value, manual);
+}
+
+function bindEditForms(container){
+  container.querySelectorAll('.edit-form').forEach(form => {
+    const [ban, num] = form.dataset.key.split('-').map(Number);
+    const g = n => form.querySelector(`[name="${n}"]`);
+    const val = n => g(n).value.trim();
+    syncForm(form);
+
+    g('apply1').addEventListener('input', () => syncForm(form));
+    g('result1').addEventListener('change', () => { form.dataset.keep2 = '0'; syncForm(form); });
+    g('apply2').addEventListener('input', () => syncForm(form));
+    g('result2').addEventListener('change', () => syncForm(form));
+    g('manual').addEventListener('change', () => syncForm(form));
+
+    g('apply2').addEventListener('change', () => syncForm(form));
+    form.querySelector('[data-act="save"]').addEventListener('click', async () => {
+      syncForm(form);
+      const pct = parseFloat(val('pct'));
+      const open2 = isFail(val('result1')) || form.dataset.keep2 === '1';   // 2차 칸이 닫혀 있으면 2차 기록은 비웁니다
+      await sendUpdate('update', {
+        ban: ban, num: num,
+        name: val('name'), gender: val('gender'), pct: isNaN(pct) ? '' : pct, gpa: val('gpa'),
+        school: val('school'), type: val('type'),
+        apply1: val('apply1'), result1: val('apply1') ? val('result1') : '',
+        apply2: open2 ? val('apply2') : '', result2: open2 ? val('result2') : '',
+        finalSchool: val('finalSchool'), finalResult: val('finalResult')
+      });
+    });
+    form.querySelector('[data-act="cancel"]').addEventListener('click', renderAll);
+    form.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+      if(!confirm(ban + '반 ' + num + '번 학생을 삭제할까요?')) return;
+      await sendUpdate('delete', {ban: ban, num: num});
+    });
+  });
+}
+
+function bindRowEditButtons(container, list){
+  if(!adminMode) return;
+  container.querySelectorAll('[data-editkey]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.editkey;
+      const row = container.querySelector(`[data-rowkey="${key}"]`);
+      const s = list.find(x => `${x.ban}-${x.num}` === key);
+      if(!row || !s) return;
+      row.outerHTML = editFormHtml(s);
+      bindEditForms(container);
+    });
+  });
+}
+
+// ---------- 공통 행 ----------
+function resBadge(v){
+  if(!v) return '';
+  if(isPass(v)) return `<span class="rb pass">${esc(v)}</span>`;
+  if(isFail(v)) return `<span class="rb fail">${esc(v)}</span>`;
+  return `<span class="rb">${esc(v)}</span>`;
+}
+const genderTag = g => g ? `<span class="gender-tag ${g === '여' ? 'f' : 'm'}">${esc(g)}</span>` : '';
+
+function resLine(s){
+  const parts = [];
+  if(s.apply1) parts.push(`1차 ${esc(s.apply1)}${resBadge(s.result1)}`);
+  if(s.apply2) parts.push(`2차 ${esc(s.apply2)}${resBadge(s.result2)}`);
+  if(s.finalSchool) parts.push(`최종 <b>${esc(s.finalSchool)}</b>${resBadge(s.finalResult)}`);
+  return parts.length ? `<div class="res-line">${parts.join(' · ')}</div>` : '';
+}
+
+function rowHtml(s, opts){
+  opts = opts || {};
+  const empty = isUndecided(s.school);
+  const badge = opts.hideClass ? `${s.num}번` : `${s.ban}반 ${s.num}번`;
+  const editBtn = adminMode ? `<button class="edit-btn" data-editkey="${s.ban}-${s.num}">수정</button>` : '';
+  const pct = (opts.pctInline !== false && s.pct !== null) ? `<span class="pct">(${s.pct}%)</span>` : '';
+  return `<div class="result-row" data-rowkey="${s.ban}-${s.num}">
+    <div class="rr-main">
+      <div class="result-left"><span class="badge">${badge}</span><span class="name">${esc(s.name)}</span>${genderTag(s.gender)}${pct}</div>
+      <div class="rr-right"><div class="school-tag ${empty ? 'empty' : ''}">${esc(s.school || '미제출')}</div>${editBtn}</div>
+    </div>
+    ${resLine(s)}
+  </div>`;
+}
+
+// ---------- 이름으로 찾기 ----------
+function doSearchFilter(q){
+  q = (q || '').trim();
+  if(q === '') return [];
+  const m = q.match(/^(\d+)\D+(\d+)/);
+  const list = m
+    ? DATA.filter(s => s.ban === parseInt(m[1]) && s.num === parseInt(m[2]))
+    : DATA.filter(s => s.name.includes(q));
+  return list.slice().sort(byBanNum);
+}
+function renderResults(list){
+  const box = $('resultList');
+  if($('searchInput').value.trim() === ''){ box.innerHTML = ''; return; }
+  if(list.length === 0){ box.innerHTML = '<div class="empty-msg">일치하는 학생이 없습니다.</div>'; return; }
+  box.innerHTML = list.map(s => rowHtml(s)).join('');
+  bindRowEditButtons(box, list);
+}
+$('searchInput').addEventListener('input', e => renderResults(doSearchFilter(e.target.value)));
+
+// ---------- 고등학교별 ----------
+let currentSchool = null, currentSort = 'pct', currentGenderFilter = 'all', currentCat = 'all';
+
+function renderChips(){
+  const counts = {};
+  DATA.forEach(s => { const k = s.school || '미제출'; counts[k] = (counts[k] || 0) + 1; });
+  const names = Object.keys(counts).sort((a, b) => {
+    if(a === '미제출') return 1;
+    if(b === '미제출') return -1;
+    return counts[b] - counts[a] || a.localeCompare(b, 'ko');
+  });
+  const byCat = {};
+  CAT_LIST.forEach(c => { byCat[c.key] = []; });
+  names.forEach(n => byCat[catOf(n)].push(n));
+  const catStudents = key => byCat[key].reduce((a, n) => a + counts[n], 0);
+
+  const pills = `<div class="cat-pills">
+    <button class="cat-pill ${currentCat === 'all' ? 'active' : ''}" data-cat="all">전체 <span class="n">${DATA.length}</span></button>
+    ${CAT_LIST.map(c => `<button class="cat-pill ${currentCat === c.key ? 'active' : ''}" data-cat="${c.key}">${c.short} <span class="n">${catStudents(c.key)}</span></button>`).join('')}
+  </div>`;
+  const groups = (currentCat === 'all' ? CAT_LIST : CAT_LIST.filter(c => c.key === currentCat)).filter(c => byCat[c.key].length > 0);
+  const sections = groups.length === 0
+    ? '<div class="empty-msg">해당 구분에 희망 학교가 없습니다.</div>'
+    : groups.map(c => `<div class="cat-section">
+        <div class="cat-title"><span>${c.label}</span><span class="cat-meta">학교 ${byCat[c.key].length}곳 · 학생 ${catStudents(c.key)}명</span></div>
+        <div class="school-grid">
+          ${byCat[c.key].map(sc => `<button class="school-chip ${sc === currentSchool ? 'active' : ''}" data-school="${esc(sc)}">${esc(sc)} <span class="cnt">${counts[sc]}</span></button>`).join('')}
+        </div>
+      </div>`).join('');
+  $('schoolGrid').innerHTML = pills + sections;
+
+  $('schoolGrid').querySelectorAll('.cat-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCat = btn.dataset.cat;
+      if(currentCat !== 'all' && currentSchool && catOf(currentSchool) !== currentCat) currentSchool = null;
+      renderChips(); renderDetail();
+    });
+  });
+  $('schoolGrid').querySelectorAll('.school-chip').forEach(chip => {
+    chip.addEventListener('click', () => { currentSchool = chip.dataset.school; renderChips(); renderDetail(); });
+  });
+}
+
+function renderDetail(){
+  const box = $('schoolDetail');
+  if(!currentSchool){
+    box.innerHTML = '<div class="placeholder">위에서 고등학교를 선택하면<br>희망 학생 명단이 여기 표시됩니다.</div>';
+    return;
+  }
+  let list = DATA.filter(s => (s.school || '미제출') === currentSchool);
+  const male = list.filter(s => s.gender === '남').length;
+  const female = list.filter(s => s.gender === '여').length;
+  if(currentGenderFilter !== 'all') list = list.filter(s => s.gender === currentGenderFilter);
+  list = list.slice().sort(currentSort === 'pct' ? byPct : byBanNum);
+  box.innerHTML = `
+    <div class="detail-header">
+      <h2>${esc(currentSchool)} <span class="cat-badge">${catInfo(catOf(currentSchool)).short}</span> <span class="detail-sub">(남 ${male} · 여 ${female})</span></h2>
+      <div class="sort-toggle">
+        <button data-sort="pct" class="${currentSort === 'pct' ? 'active' : ''}">석차백분율순</button>
+        <button data-sort="class" class="${currentSort === 'class' ? 'active' : ''}">반-번호순</button>
+      </div>
+    </div>
+    <div class="sort-toggle" style="margin:10px 0 16px;">
+      <button data-gender="all" class="${currentGenderFilter === 'all' ? 'active' : ''}">전체</button>
+      <button data-gender="남" class="${currentGenderFilter === '남' ? 'active' : ''}">남학생</button>
+      <button data-gender="여" class="${currentGenderFilter === '여' ? 'active' : ''}">여학생</button>
+    </div>
+    <div class="result-list">${list.map(s => rowHtml(s)).join('')}</div>`;
+  box.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => { currentSort = b.dataset.sort; renderDetail(); }));
+  box.querySelectorAll('[data-gender]').forEach(b => b.addEventListener('click', () => { currentGenderFilter = b.dataset.gender; renderDetail(); }));
+  bindRowEditButtons(box, list);
+}
+
+// ---------- 성적대별 ----------
+const BANDS = [];
+for(let i = 0; i < 10; i++) BANDS.push({label: `${i * 10}~${(i + 1) * 10}%`});
+const bandOf = pct => Math.min(9, Math.floor(pct / 10));
+let currentBand = null, bandSort = 'pct';
+
+function renderBandChips(){
+  const counts = new Array(10).fill(0);
+  DATA.forEach(s => { if(s.pct !== null) counts[bandOf(s.pct)]++; });
+  $('bandGrid').innerHTML = BANDS.map((b, i) => `<button class="school-chip ${i === currentBand ? 'active' : ''}" data-band="${i}">${b.label} <span class="cnt">${counts[i]}</span></button>`).join('');
+  $('bandGrid').querySelectorAll('.school-chip').forEach(chip => {
+    chip.addEventListener('click', () => { currentBand = parseInt(chip.dataset.band); renderBandChips(); renderBandDetail(); });
+  });
+}
+function renderBandDetail(){
+  const box = $('bandDetail');
+  if(currentBand === null){
+    box.innerHTML = '<div class="placeholder">위에서 성적 구간을 선택하면<br>해당 구간 학생 명단이 여기 표시됩니다.</div>';
+    return;
+  }
+  const list = DATA.filter(s => s.pct !== null && bandOf(s.pct) === currentBand).sort(bandSort === 'pct' ? byPct : byBanNum);
+  box.innerHTML = `
+    <div class="detail-header">
+      <h2>석차백분율 ${BANDS[currentBand].label} 구간 <span class="detail-sub">(${list.length}명)</span></h2>
+      <div class="sort-toggle">
+        <button data-bsort="pct" class="${bandSort === 'pct' ? 'active' : ''}">석차백분율순</button>
+        <button data-bsort="class" class="${bandSort === 'class' ? 'active' : ''}">반-번호순</button>
+      </div>
+    </div>
+    <div class="result-list">${list.map(s => rowHtml(s, {pctInline: false})).join('')}</div>`;
+  box.querySelectorAll('[data-bsort]').forEach(b => b.addEventListener('click', () => { bandSort = b.dataset.bsort; renderBandDetail(); }));
+  bindRowEditButtons(box, list);
+}
+
+// ---------- 학급별 ----------
+let currentClass = null, classSort = 'num';
+
+function classNumbers(){ return [...new Set(DATA.map(s => s.ban))].sort((a, b) => a - b); }
+
+function renderClassChips(){
+  const counts = {};
+  DATA.forEach(s => { counts[s.ban] = (counts[s.ban] || 0) + 1; });
+  $('classGrid').innerHTML = classNumbers().map(c => `<button class="school-chip ${c === currentClass ? 'active' : ''}" data-class="${c}">${c}반 <span class="cnt">${counts[c]}</span></button>`).join('');
+  $('classGrid').querySelectorAll('.school-chip').forEach(chip => {
+    chip.addEventListener('click', () => { currentClass = parseInt(chip.dataset.class); renderClassChips(); renderClassDetail(); });
+  });
+}
+function renderClassDetail(){
+  const box = $('classDetail'), addArea = $('addStudentArea');
+  if(currentClass === null){
+    box.innerHTML = '<div class="placeholder">위에서 학급을 선택하면<br>학급 전체 명단이 여기 표시됩니다.</div>';
+    addArea.innerHTML = '';
+    return;
+  }
+  const list = DATA.filter(s => s.ban === currentClass).sort(classSort === 'pct' ? byPct : byBanNum);
+  const male = list.filter(s => s.gender === '남').length, female = list.filter(s => s.gender === '여').length;
+  box.innerHTML = `
+    <div class="detail-header">
+      <h2>${currentClass}반 <span class="detail-sub">(${list.length}명${male + female ? ` · 남 ${male} · 여 ${female}` : ''})</span></h2>
+      <div class="sort-toggle">
+        <button data-csort="num" class="${classSort === 'num' ? 'active' : ''}">번호순</button>
+        <button data-csort="pct" class="${classSort === 'pct' ? 'active' : ''}">석차백분율순</button>
+      </div>
+    </div>
+    <div class="result-list">${list.map(s => rowHtml(s, {hideClass: true})).join('')}</div>`;
+  box.querySelectorAll('[data-csort]').forEach(b => b.addEventListener('click', () => { classSort = b.dataset.csort; renderClassDetail(); }));
+  bindRowEditButtons(box, list);
+
+  if(adminMode){
+    addArea.innerHTML = `<div class="add-form">
+      <h3>${currentClass}반에 학생 추가</h3>
+      <div class="add-form-row">
+        <input name="num" type="number" placeholder="번호" style="width:70px;">
+        <input name="name" placeholder="이름" style="width:90px;">
+        <select name="gender"><option value="남">남</option><option value="여">여</option></select>
+        <input name="pct" type="number" step="0.01" placeholder="석차백분율" style="width:100px;">
+        <input name="school" list="schoolList" placeholder="1희망 고등학교" style="width:150px;">
+        <button id="addStudentBtn">추가</button>
+      </div></div>`;
+    $('addStudentBtn').addEventListener('click', async () => {
+      const g = n => addArea.querySelector(`[name="${n}"]`).value.trim();
+      const pct = parseFloat(g('pct'));
+      const row = {ban: currentClass, num: parseInt(g('num')), name: g('name'), gender: g('gender'), pct: isNaN(pct) ? '' : pct, school: g('school') || '미제출'};
+      if(!row.num || !row.name){ alert('번호와 이름을 입력하세요.'); return; }
+      await sendUpdate('add', row);
+    });
+  } else {
+    addArea.innerHTML = '';
+  }
+}
+
+// ---------- 원서 결과 ----------
+let resClass = '', resStatus = '';
+const STATUS_LIST = [
+  {key: '', label: '전체'},
+  {key: 'done', label: '최종합격 확정'},
+  {key: 'wait', label: '원서 접수·결과 대기'},
+  {key: 'none', label: '원서 미접수'}
+];
+
+function renderResultTab(){
+  const total = DATA.length;
+  const done = DATA.filter(s => statusOf(s) === 'done').length;
+  const wait = DATA.filter(s => statusOf(s) === 'wait').length;
+  const none = total - done - wait;
+  $('resultCards').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="label">전체 학생</div></div>
+    <div class="stat-card"><div class="num">${done}</div><div class="label">최종합격 확정</div></div>
+    <div class="stat-card"><div class="num">${wait}</div><div class="label">접수·결과 대기</div></div>
+    <div class="stat-card"><div class="num">${none}</div><div class="label">원서 미접수</div></div>`;
+
+  const classes = classNumbers();
+  if(resClass !== '' && !classes.includes(Number(resClass))) resClass = '';
+  $('resClassChips').innerHTML =
+    `<button class="school-chip ${resClass === '' ? 'active' : ''}" data-rc="">전체 <span class="cnt">${total}</span></button>` +
+    classes.map(c => `<button class="school-chip ${String(c) === String(resClass) ? 'active' : ''}" data-rc="${c}">${c}반 <span class="cnt">${DATA.filter(s => s.ban === c).length}</span></button>`).join('');
+  $('resClassChips').querySelectorAll('[data-rc]').forEach(b => b.addEventListener('click', () => { resClass = b.dataset.rc; renderResultTab(); }));
+
+  $('resStatusChips').innerHTML = STATUS_LIST.map(st => {
+    const n = st.key === '' ? total : DATA.filter(s => statusOf(s) === st.key).length;
+    return `<button class="school-chip ${st.key === resStatus ? 'active' : ''}" data-rs="${st.key}">${st.label} <span class="cnt">${n}</span></button>`;
+  }).join('');
+  $('resStatusChips').querySelectorAll('[data-rs]').forEach(b => b.addEventListener('click', () => { resStatus = b.dataset.rs; renderResultTab(); }));
+
+  const q = $('resultSearch').value.trim();
+  const list = DATA.filter(s =>
+    (resClass === '' || String(s.ban) === String(resClass)) &&
+    (resStatus === '' || statusOf(s) === resStatus) &&
+    (q === '' || s.name.includes(q))
+  ).sort(byBanNum);
+
+  const box = $('resultCardList');
+  if(list.length === 0){ box.innerHTML = '<div class="empty-msg">조건에 맞는 학생이 없습니다.</div>'; return; }
+  box.innerHTML = list.map(s => {
+    const cell = (label, school, result) => `<div class="rs-cell"><span class="flabel">${label}</span><span class="fval ${school ? '' : 'muted'}">${school ? esc(school) : '-'}${resBadge(result)}</span></div>`;
+    const ok = statusOf(s) === 'done';
+    const editBtn = adminMode ? `<button class="edit-btn" data-editkey="${s.ban}-${s.num}">수정</button>` : '';
+    return `<div class="rs-card" data-rowkey="${s.ban}-${s.num}">
+      <div class="rs-head">
+        <div class="result-left"><span class="badge">${s.ban}반 ${s.num}번</span><span class="name">${esc(s.name)}</span>${genderTag(s.gender)}${s.gpa ? `<span class="gpa-tag">내신 ${esc(s.gpa)}</span>` : ''}</div>
+        ${editBtn}
+      </div>
+      <div class="rs-grid">
+        ${cell('1희망', isUndecided(s.school) ? '' : s.school, '')}
+        ${cell('1차 원서', s.apply1, s.result1)}
+        ${cell('2차 원서', s.apply2 || (isPass(s.result1) ? '해당 없음' : ''), s.result2)}
+        <div class="rs-cell final ${ok ? 'ok' : ''}"><span class="flabel">최종합격</span><span class="fval ${s.finalSchool ? '' : 'muted'}">${s.finalSchool ? esc(s.finalSchool) : '미확정'}${resBadge(s.finalResult)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  bindRowEditButtons(box, list);
+}
+$('resultSearch').addEventListener('input', renderResultTab);
+
+// ---------- 통계 ----------
+const charts = {};
+function countBy(list, fn){ const m = {}; list.forEach(s => { const k = fn(s); m[k] = (m[k] || 0) + 1; }); return m; }
+function topEntries(m, n){ return Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko')).slice(0, n); }
+const statCard = (num, label, small) => `<div class="stat-card"><div class="num ${small ? 'small' : ''}">${esc(num)}</div><div class="label">${label}</div></div>`;
+
+function drawBar(id, labels, values, color, horizontal){
+  const cv = $(id);
+  if(!cv) return;
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+  if(typeof Chart === 'undefined'){
+    cv.parentElement.innerHTML = '<div class="empty-msg">차트 라이브러리를 불러오지 못했습니다. (표와 숫자는 정상 표시됩니다)</div>';
+    return;
+  }
+  const catAxis = {grid: {display: false}, ticks: {font: {size: 12}, autoSkip: false}};
+  const valAxis = {beginAtZero: true, ticks: {precision: 0}, grid: {color: '#E7E0CC'}};
+  charts[id] = new Chart(cv.getContext('2d'), {
+    type: 'bar',
+    data: {labels: labels, datasets: [{data: values, backgroundColor: color, borderRadius: 4, maxBarThickness: horizontal ? 22 : 42}]},
+    options: {
+      indexAxis: horizontal ? 'y' : 'x', responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}},
+      scales: horizontal ? {x: valAxis, y: catAxis} : {x: catAxis, y: valAxis}
+    }
+  });
+}
+
+function renderStats(){
+  const total = DATA.length;
+  const answered = DATA.filter(s => !isUndecided(s.school));
+  const male = DATA.filter(s => s.gender === '남').length;
+  const female = DATA.filter(s => s.gender === '여').length;
+
+  // 희망학교 통계
+  const hopeTop = topEntries(countBy(answered, s => s.school), 10);
+  $('statCardsHope').innerHTML =
+    statCard(total, '전체 학생 수') + statCard(answered.length, '희망교 응답 인원') +
+    statCard(total - answered.length, '미정 · 미제출') + statCard(hopeTop.length ? hopeTop[0][0] : '-', '최다 희망 학교', true);
+
+  const typeCounts = countBy(DATA, typeOf);
+  const typeLabels = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a]);
+  drawBar('typeChart', typeLabels, typeLabels.map(l => typeCounts[l]), '#1B2A4A', false);
+  drawBar('hopeSchoolChart', hopeTop.map(e => e[0]), hopeTop.map(e => e[1]), '#B5842A', true);
+
+  const groups = {};
+  DATA.forEach(s => {
+    const g = groups[s.ban] = groups[s.ban] || {total: 0, m: 0, f: 0, ans: 0};
+    g.total++; if(s.gender === '남') g.m++; if(s.gender === '여') g.f++; if(!isUndecided(s.school)) g.ans++;
+  });
+  const rows = Object.entries(groups).sort((a, b) => a[0] - b[0]).map(([b, g]) => `<tr><td>${b}반</td><td class="num">${g.total}</td><td class="num">${g.m}</td><td class="num">${g.f}</td><td class="num">${g.ans}</td></tr>`);
+  rows.push(`<tr><td><b>전체</b></td><td class="num">${total}</td><td class="num">${male}</td><td class="num">${female}</td><td class="num">${answered.length}</td></tr>`);
+  document.querySelector('#classTableHope tbody').innerHTML = rows.join('');
+
+  // 합격한 학교 통계
+  const passed = DATA.filter(finalPassed);
+  const finalCounts = countBy(passed, s => s.finalSchool);
+  const finalEntries = Object.entries(finalCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'));
+  $('statCardsFinal').innerHTML =
+    statCard(passed.length, '최종합격 확정 인원') + statCard(finalEntries.length, '최종합격 학교 수') +
+    statCard(finalEntries.length ? finalEntries[0][0] : '-', '최다 합격 학교', true);
+  $('statCardsFinal').classList.add('three');
+
+  drawBar('finalSchoolChart', finalEntries.slice(0, 10).map(e => e[0]), finalEntries.slice(0, 10).map(e => e[1]), '#2E7D5B', true);
+
+  document.querySelector('#finalSchoolTable tbody').innerHTML = finalEntries.length
+    ? finalEntries.map(([school, n]) => {
+        const m = passed.filter(s => s.finalSchool === school && s.gender === '남').length;
+        const f = passed.filter(s => s.finalSchool === school && s.gender === '여').length;
+        return `<tr><td>${esc(school)}</td><td class="num">${m}</td><td class="num">${f}</td><td class="num">${n}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--ink-faint);">아직 최종합격이 확정된 학생이 없습니다.</td></tr>';
+
+  const fg = {};
+  DATA.forEach(s => { const g = fg[s.ban] = fg[s.ban] || {total: 0, pass: 0}; g.total++; if(finalPassed(s)) g.pass++; });
+  document.querySelector('#classTableFinal tbody').innerHTML = Object.entries(fg).sort((a, b) => a[0] - b[0])
+    .map(([b, g]) => `<tr><td>${b}반</td><td class="num">${g.total}</td><td class="num">${g.pass}</td></tr>`).join('');
+}
+
+loadData(false);
+setInterval(() => { if(!adminMode) loadData(true); }, 5 * 60 * 1000);   // 5분마다 자동 새로고침 (관리자 모드에서는 쉬어요)
+</script>
+</body>
+</html>
