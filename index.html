@@ -454,17 +454,31 @@ async function readJson(res){
   }
 }
 
+const CACHE_KEY = 'gwandong_hischool_cache_v1';
+function saveCache(){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({t: Date.now(), data: DATA})); }catch(e){} }
+function loadCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if(c && Array.isArray(c.data) && c.data.length){ DATA = c.data.map(normalize); return c.t; }
+  }catch(e){}
+  return 0;
+}
+let pendingSaves = 0;
+
 async function loadData(silent){
   if(!silent) setStatus('데이터를 불러오는 중…', '');
   try{
     const res = await fetch(SCRIPT_URL);
     const json = await readJson(res);
     if(!json.ok) throw new Error(json.error || '불러오기 실패');
+    if(pendingSaves > 0) return;                       // 저장 중에는 화면 값을 덮어쓰지 않음
     DATA = json.data.map(normalize);
+    saveCache();
     setStatus('구글시트와 연결됨 · 총 ' + DATA.length + '명 · ' + new Date().toLocaleTimeString('ko-KR', {hour12:false}) + ' 기준', 'ok');
     renderAll();
   }catch(err){
-    setStatus('데이터를 불러오지 못했습니다. SCRIPT_URL 설정을 확인해주세요. (' + err.message + ')', 'error');
+    if(DATA.length) setStatus('최신 데이터를 가져오지 못해 저장된 데이터를 보여 줍니다. (' + err.message + ')', 'error');
+    else setStatus('데이터를 불러오지 못했습니다. SCRIPT_URL 설정을 확인해주세요. (' + err.message + ')', 'error');
   }
 }
 
@@ -480,15 +494,33 @@ async function callApi(payload){
 }
 
 async function sendUpdate(action, row){
-  setStatus('저장 중…', '');
+  // 화면을 먼저 바꾸고(낙관적 갱신), 시트 반영은 뒤에서 확인합니다. 실패하면 되돌립니다.
+  const backup = DATA.slice();
+  const key = r => r.ban + '-' + r.num;
+  const k = key(row);
+  if(action === 'update'){
+    DATA = DATA.map(s => key(s) === k ? normalize(Object.assign({}, s, row)) : s);
+  }else if(action === 'delete'){
+    DATA = DATA.filter(s => key(s) !== k);
+  }else if(action === 'add'){
+    DATA = DATA.concat([normalize(row)]).sort((a, b) => a.ban - b.ban || a.num - b.num);
+  }
+  pendingSaves++;
+  setStatus('저장됨 · 구글시트에 반영 중…', '');
+  renderAll();
   try{
     const json = await callApi({action: action, row: row});
-    if(json.data) DATA = json.data.map(normalize);
-    setStatus('저장 완료 · 구글시트와 연결됨 · 총 ' + DATA.length + '명', 'ok');
+    pendingSaves--;
+    if(pendingSaves === 0 && json.data) DATA = json.data.map(normalize);
+    saveCache();
+    setStatus('저장 완료 · 구글시트에 반영되었습니다 · 총 ' + DATA.length + '명', 'ok');
     renderAll();
     return true;
   }catch(err){
-    setStatus('저장 실패: ' + err.message, 'error');
+    pendingSaves--;
+    if(pendingSaves === 0) DATA = backup;
+    setStatus('저장 실패: ' + err.message + ' (화면을 이전 값으로 되돌렸습니다)', 'error');
+    renderAll();
     alert('저장 실패: ' + err.message);
     return false;
   }
@@ -1040,7 +1072,8 @@ function renderStats(){
     .map(([b, g]) => `<tr><td>${b}반</td><td class="num">${g.total}</td><td class="num">${g.pass}</td></tr>`).join('');
 }
 
-loadData(false);
+if(loadCache()){ setStatus('저장된 데이터를 먼저 보여 줍니다 · 최신 데이터 확인 중…', ''); renderAll(); loadData(true); }
+else loadData(false);
 setInterval(() => { if(!adminMode) loadData(true); }, 5 * 60 * 1000);   // 5분마다 자동 새로고침 (관리자 모드에서는 쉬어요)
 </script>
 </body>
