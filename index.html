@@ -401,6 +401,42 @@
     color:var(--white);
     cursor:pointer;
   }
+
+  /* 고등학교 급별 구분 */
+  .cat-pills{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin-bottom:22px; padding-bottom:14px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .cat-pill{
+    appearance:none;
+    font-family:'Pretendard',sans-serif;
+    font-size:13.5px; font-weight:600;
+    background:var(--white);
+    border:1px solid var(--paper-line);
+    color:var(--ink-soft);
+    border-radius:4px;
+    padding:7px 12px;
+    cursor:pointer;
+    display:flex; gap:6px; align-items:baseline;
+  }
+  .cat-pill .n{ font-size:12px; font-variant-numeric:tabular-nums; color:var(--gold); }
+  .cat-pill.active{ background:var(--ink); border-color:var(--ink); color:var(--white); }
+  .cat-pill.active .n{ color:var(--gold-soft); }
+  .cat-section{ margin-bottom:22px; }
+  .cat-title{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    font-family:'Noto Serif KR', serif; font-weight:700; font-size:16px;
+    border-bottom:1px solid var(--ink);
+    padding-bottom:6px; margin-bottom:10px;
+  }
+  .cat-meta{ font-family:'Pretendard',sans-serif; font-weight:400; font-size:12.5px; color:var(--ink-soft); }
+  .cat-section .school-grid{ margin-bottom:0; }
+  .cat-badge{
+    font-family:'Pretendard',sans-serif; font-size:11.5px; font-weight:600;
+    background:var(--gold-soft); color:var(--ink);
+    border-radius:3px; padding:2px 7px; vertical-align:middle;
+  }
 </style>
 </head>
 <body>
@@ -453,7 +489,7 @@
   </div>
 
   <div class="panel" id="panel-school">
-    <div class="school-grid" id="schoolGrid"></div>
+    <div id="schoolGrid"></div>
     <div id="schoolDetail">
       <div class="placeholder">위에서 고등학교를 선택하면<br>희망 학생 명단이 여기 표시됩니다.</div>
     </div>
@@ -463,7 +499,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuDutyY9w4P86Dk1Lu7GxXdYmGwVRhRjp4kn_SrfpuGezRbLtR19MjqgS_lNJ25xrM/exec"; // 배포된 Apps Script 웹앱 URL을 여기에 넣으세요
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziWEUksDud-TQYybcDnrTA9X6TqGIvcYzoch1jyy3sPNV0LJ8KXfSo6rQBhGrljX5x/exec"; // 배포된 Apps Script 웹앱 URL을 여기에 넣으세요
 
 let DATA = [];
 let adminMode = false;
@@ -673,19 +709,81 @@ let currentSchool = null;
 let currentSort = 'pct';
 let currentGenderFilter = 'all';
 
+// ---------- 학교 급별 분류 ----------
+const CAT_LIST = [
+  {key:'sp', label:'특목고(과고/예술고/외고)', short:'특목고'},
+  {key:'me', label:'마이스터고', short:'마이스터고'},
+  {key:'vo', label:'특성화고', short:'특성화고'},
+  {key:'ge', label:'일반고', short:'일반고'},
+  {key:'et', label:'각종학교 및 기타', short:'각종·기타'}
+];
+const SCHOOL_CAT_MAP = {
+  // 특목고
+  '경남외고':'sp','김해외고':'sp','창원과학고':'sp','대구과학고등학교':'sp','부산예술고등학교':'sp','충남예술고등학교':'sp',
+  // 마이스터고
+  '한국나노마이스터고':'me','한국국제통상마이스터고등학교':'me','공군항공과학고':'me','삼천포공고':'me','부산기계공업고등학교':'me','부산해사고':'me',
+  // 특성화고
+  '생과고':'vo','건설고':'vo','경남관광고':'vo','경남항공고':'vo','창원기계공고':'vo','경북항공고등학교':'vo','부산컴퓨터과학고등학교':'vo','부산조리고등학교':'vo','거제여상고':'vo','김해한일여자고등학교':'vo','진영제일고':'vo','창녕슈퍼텍고등학교':'vo','부경보건고':'vo',
+  // 일반고
+  '대청고':'ge','율하고':'ge','수남고':'ge','삼문고':'ge','장유고':'ge','가야고':'ge','거창고':'ge','거창대성고등학교':'ge','김해여고':'ge','남해해성고':'ge','밀양동명고':'ge','남산고등학교':'ge','모계고':'ge',
+  // 각종학교 및 기타(학교명 불분명·미정·미제출)
+  '미제출':'et','김해금곡고':'et','없음':'et','모르겠다':'et','김해시 내  고등학교':'et','한조고':'et','생과고,수남고':'et'
+};
+function catOf(school){
+  const s = (school||'').trim();
+  if(SCHOOL_CAT_MAP[s]) return SCHOOL_CAT_MAP[s];
+  if(/마이스터/.test(s)) return 'me';
+  if(/외고|외국어고|과학고|과고|예술고|국제고|체육고/.test(s)) return 'sp';
+  if(/공고|공업|상고|여상|관광고|항공고|조리|컴퓨터|건설|생과고|생명과학|정보고|산업고|기계|보건/.test(s)) return 'vo';
+  return 'et';
+}
+function catInfo(key){ return CAT_LIST.find(c=>c.key===key); }
+let currentCat = 'all';
+
 function renderChips(){
   const schoolCounts = {};
   DATA.forEach(s=>{ schoolCounts[s.school] = (schoolCounts[s.school]||0)+1; });
-  const schools = Object.keys(schoolCounts).sort((a,b)=>{
+  const names = Object.keys(schoolCounts).sort((a,b)=>{
     if(a==='미제출') return 1;
     if(b==='미제출') return -1;
     return schoolCounts[b]-schoolCounts[a] || a.localeCompare(b,'ko');
   });
-  schoolGrid.innerHTML = schools.map(sc=>{
-    return `<button class="school-chip ${sc===currentSchool?'active':''}" data-school="${sc}">
-      ${sc} <span class="cnt">${schoolCounts[sc]}</span>
-    </button>`;
-  }).join('');
+  const byCat = {};
+  CAT_LIST.forEach(c=>{ byCat[c.key] = []; });
+  names.forEach(n=>{ byCat[catOf(n)].push(n); });
+  const catStudents = key => byCat[key].reduce((a,n)=>a+schoolCounts[n],0);
+
+  const pills = `<div class="cat-pills">
+    <button class="cat-pill ${currentCat==='all'?'active':''}" data-cat="all">전체 <span class="n">${DATA.length}</span></button>
+    ${CAT_LIST.map(c=>`<button class="cat-pill ${currentCat===c.key?'active':''}" data-cat="${c.key}">${c.short} <span class="n">${catStudents(c.key)}</span></button>`).join('')}
+  </div>`;
+
+  const groups = (currentCat==='all' ? CAT_LIST : CAT_LIST.filter(c=>c.key===currentCat))
+    .filter(c=>byCat[c.key].length>0);
+
+  const sections = groups.length===0
+    ? '<div class="empty-msg">해당 구분에 희망 학교가 없습니다.</div>'
+    : groups.map(c=>`<div class="cat-section">
+        <div class="cat-title"><span>${c.label}</span><span class="cat-meta">학교 ${byCat[c.key].length}곳 · 학생 ${catStudents(c.key)}명</span></div>
+        <div class="school-grid">
+          ${byCat[c.key].map(sc=>`<button class="school-chip ${sc===currentSchool?'active':''}" data-school="${sc}">
+            ${sc} <span class="cnt">${schoolCounts[sc]}</span>
+          </button>`).join('')}
+        </div>
+      </div>`).join('');
+
+  schoolGrid.innerHTML = pills + sections;
+
+  schoolGrid.querySelectorAll('.cat-pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentCat = btn.dataset.cat;
+      if(currentCat!=='all' && currentSchool && catOf(currentSchool)!==currentCat){
+        currentSchool = null;
+      }
+      renderChips();
+      renderDetail();
+    });
+  });
   schoolGrid.querySelectorAll('.school-chip').forEach(chip=>{
     chip.addEventListener('click', ()=>{
       currentSchool = chip.dataset.school;
@@ -713,7 +811,7 @@ function renderDetail(){
   }
   schoolDetail.innerHTML = `
     <div class="detail-header">
-      <h2>${currentSchool} <span style="font-weight:400;font-size:15px;color:var(--ink-soft);">(남 ${maleCount} · 여 ${femaleCount})</span></h2>
+      <h2>${currentSchool} <span class="cat-badge">${catInfo(catOf(currentSchool)).short}</span> <span style="font-weight:400;font-size:15px;color:var(--ink-soft);">(남 ${maleCount} · 여 ${femaleCount})</span></h2>
       <div class="sort-toggle">
         <button data-sort="pct" class="${currentSort==='pct'?'active':''}">석차백분율순</button>
         <button data-sort="class" class="${currentSort==='class'?'active':''}">반-번호순</button>
