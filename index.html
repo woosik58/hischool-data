@@ -110,6 +110,8 @@
   .school-tag.empty{ background:var(--rose-soft); color:var(--rose); font-weight:500; }
   .res-line{ margin-top:8px; font-size:12.8px; color:var(--ink-soft); line-height:1.7; }
   .res-line b{ color:var(--ink); }
+  .note-txt{ display:inline-block; margin-left:4px; padding:0 6px; border-radius:3px; background:var(--paper-line); color:var(--ink-soft); font-size:11.5px; font-weight:500; }
+  .rr-note{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; text-align:right; }
   .rb{ display:inline-block; font-size:11px; font-weight:700; padding:1px 7px; border-radius:20px; background:#ECE7D8; color:var(--ink-soft); margin-left:3px; }
   .rb.pass{ background:var(--good-soft); color:var(--good); }
   .rb.fail{ background:var(--rose-soft); color:var(--rose); }
@@ -385,7 +387,7 @@ function normalize(d){
   if(pct !== null && !isFinite(pct)) pct = null;
   const o = {
     ban: Number(d.ban), num: Number(d.num), name: str(d.name), gender: str(d.gender), pct: pct,
-    school: str(d.school),
+    school: str(d.school), note0: str(d.note0), note1: str(d.note1), note2: str(d.note2),
     apply1: str(d.apply1), result1: str(d.result1), apply2: str(d.apply2), result2: str(d.result2),
     finalSchool: str(d.finalSchool), finalResult: str(d.finalResult)
   };
@@ -640,13 +642,15 @@ function editFormHtml(s){
       ${fld('성별', sel('gender', s.gender, ['남', '여']))}
       ${fld('석차백분율', inp('pct', s.pct === null ? '' : s.pct, 'type="number" step="0.01"'))}
       ${fld('1희망 학교', inp('school', s.school, 'list="schoolList"'))}
+      ${fld('1희망 학과·비고', inp('note0', s.note0, 'placeholder="예: 전자과"'))}
+      <span></span>
       <div class="ef-sec">원서 접수 · 합격 결과</div>
       ${fld('1차 원서접수 학교', inp('apply1', s.apply1, 'list="schoolList"'))}
       ${fld('1차 합격여부', sel('result1', s.result1, RES))}
-      <span></span>
+      ${fld('1차 학과·비고', inp('note1', s.note1, 'placeholder="예: 전자과"'))}
       ${fld('2차 원서접수 학교 (1차 불합격 시)', inp('apply2', s.apply2, 'list="schoolList"'))}
       ${fld('2차 합격여부', sel('result2', s.result2, RES))}
-      <span></span>
+      ${fld('2차 학과·비고', inp('note2', s.note2, 'placeholder="예: 전자과"'))}
       ${fld('최종합격 학교', inp('finalSchool', s.finalSchool, 'list="schoolList"'))}
       ${fld('최종합격 여부', sel('finalResult', s.finalResult, RES))}
       <label class="ef-f ef-check"><input type="checkbox" name="manual" ${manual ? 'checked' : ''}> 직접 입력</label>
@@ -714,9 +718,9 @@ function bindEditForms(container){
       await sendUpdate('update', {
         ban: ban, num: num,
         name: val('name'), gender: val('gender'), pct: isNaN(pct) ? '' : pct,
-        school: val('school'),
-        apply1: val('apply1'), result1: val('apply1') ? val('result1') : '',
-        apply2: open2 ? val('apply2') : '', result2: open2 ? val('result2') : '',
+        school: val('school'), note0: val('note0'),
+        apply1: val('apply1'), result1: val('apply1') ? val('result1') : '', note1: val('note1'),
+        apply2: open2 ? val('apply2') : '', result2: open2 ? val('result2') : '', note2: open2 ? val('note2') : '',
         finalSchool: val('finalSchool'), finalResult: val('finalResult')
       });
     });
@@ -751,10 +755,12 @@ function resBadge(v){
 }
 const genderTag = g => g ? `<span class="gender-tag ${g === '여' ? 'f' : 'm'}">${esc(g)}</span>` : '';
 
+const noteTag = n => n ? `<span class="note-txt">${esc(n)}</span>` : '';
+
 function resLine(s){
   const parts = [];
-  if(s.apply1) parts.push(`1차 ${esc(s.apply1)}${resBadge(s.result1)}`);
-  if(s.apply2) parts.push(`2차 ${esc(s.apply2)}${resBadge(s.result2)}`);
+  if(s.apply1) parts.push(`1차 ${esc(s.apply1)}${noteTag(s.note1)}${resBadge(s.result1)}`);
+  if(s.apply2) parts.push(`2차 ${esc(s.apply2)}${noteTag(s.note2)}${resBadge(s.result2)}`);
   if(s.finalSchool) parts.push(`최종 <b>${esc(s.finalSchool)}</b>${resBadge(s.finalResult)}`);
   return parts.length ? `<div class="res-line">${parts.join(' · ')}</div>` : '';
 }
@@ -768,7 +774,7 @@ function rowHtml(s, opts){
   return `<div class="result-row" data-rowkey="${s.ban}-${s.num}">
     <div class="rr-main">
       <div class="result-left"><span class="badge">${badge}</span><span class="name">${esc(s.name)}</span>${genderTag(s.gender)}${pct}</div>
-      <div class="rr-right"><div class="school-tag ${empty ? 'empty' : ''}">${esc(s.school || '미제출')}</div>${editBtn}</div>
+      <div class="rr-right"><div class="school-tag ${empty ? 'empty' : ''}">${esc(s.school || '미제출')}${noteTag(s.note0)}</div>${editBtn}</div>
     </div>
     ${resLine(s)}
   </div>`;
@@ -1000,7 +1006,7 @@ function renderResultTab(){
   const box = $('resultCardList');
   if(list.length === 0){ box.innerHTML = '<div class="empty-msg">조건에 맞는 학생이 없습니다.</div>'; return; }
   box.innerHTML = list.map(s => {
-    const cell = (label, school, result) => `<div class="rs-cell"><span class="flabel">${label}</span><span class="fval ${school ? '' : 'muted'}">${school ? esc(school) : '-'}${resBadge(result)}</span></div>`;
+    const cell = (label, school, result, note) => `<div class="rs-cell"><span class="flabel">${label}</span><span class="fval ${school ? '' : 'muted'}">${school ? esc(school) : '-'}${resBadge(result)}</span>${note ? `<span class="note-txt" style="margin:2px 0 0;align-self:flex-start">${esc(note)}</span>` : ''}</div>`;
     const ok = statusOf(s) === 'done';
     const editBtn = adminMode ? `<button class="edit-btn" data-editkey="${s.ban}-${s.num}">수정</button>` : '';
     return `<div class="rs-card" data-rowkey="${s.ban}-${s.num}">
@@ -1009,9 +1015,9 @@ function renderResultTab(){
         ${editBtn}
       </div>
       <div class="rs-grid">
-        ${cell('1희망', isUndecided(s.school) ? '' : s.school, '')}
-        ${cell('1차 원서', s.apply1, s.result1)}
-        ${cell('2차 원서', s.apply2 || (isPass(s.result1) ? '해당 없음' : ''), s.result2)}
+        ${cell('1희망', isUndecided(s.school) ? '' : s.school, '', s.note0)}
+        ${cell('1차 원서', s.apply1, s.result1, s.note1)}
+        ${cell('2차 원서', s.apply2 || (isPass(s.result1) ? '해당 없음' : ''), s.result2, s.note2)}
         <div class="rs-cell final ${ok ? 'ok' : ''}"><span class="flabel">최종합격</span><span class="fval ${s.finalSchool ? '' : 'muted'}">${s.finalSchool ? esc(s.finalSchool) : '미확정'}${resBadge(s.finalResult)}</span></div>
       </div>
     </div>`;
