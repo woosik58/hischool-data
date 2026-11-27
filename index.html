@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root{
     --ink:#1B2A4A;
@@ -326,6 +327,7 @@
     <div class="ledger-bar">
       <select id="ledgerClass"></select>
       <button type="button" class="primary" id="ledgerPrint">원서발급대장 출력</button>
+      <button type="button" id="ledgerXlsx">엑셀로 저장</button>
       <span class="hint" style="margin:0;">학급별로 A4 한 장씩 인쇄됩니다. 발급일은 원서접수 시기에 맞춰 자동 입력됩니다.</span>
     </div>
     <div class="hint" style="margin-top:0;">1희망은 처음 적어 낸 희망 학교, 1차·2차는 실제로 원서를 접수한 학교와 결과, 최종은 진학이 확정된 학교입니다.</div>
@@ -1183,6 +1185,55 @@ $('ledgerPrint').addEventListener('click', () => {
   setTimeout(() => { window.print(); }, 50);
 });
 window.addEventListener('afterprint', () => document.body.classList.remove('printing-ledger'));
+
+// ---------- 원서발급대장 엑셀 저장 (학급별 시트, 결재란 포함) ----------
+function ledgerXlsx(){
+  if(typeof ExcelJS === 'undefined'){ alert('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+  const v = $('ledgerClass').value;
+  const bans = v === 'all' ? [...new Set(DATA.map(s => s.ban))].sort((a,b) => a - b) : [v];
+  const wb = new ExcelJS.Workbook();
+  const SPANS = [2,3,6,3,2,6,3,2,4], NC = SPANS.reduce((a,b) => a+b, 0);
+  const thin = {style:'thin', color:{argb:'FF000000'}}, BR = {top:thin,left:thin,bottom:thin,right:thin};
+  const CEN = {horizontal:'center', vertical:'middle', wrapText:true};
+  const HF = {type:'pattern', pattern:'solid', fgColor:{argb:'FFE7E2D3'}};
+  const FN = bold => ({name:'맑은 고딕', size:10, bold:!!bold});
+  const colL = n => ExcelJS.Workbook ? (function(n){ let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; })(n) : '';
+  bans.forEach(ban => {
+    const ws = wb.addWorksheet(ban + '반');
+    for(let c=1;c<=NC;c++) ws.getColumn(c).width = 4.6;
+    const box = (r1,c1,r2,c2,val,bold,fill) => {
+      ws.mergeCells(r1,c1,r2,c2);
+      for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++){ const cell = ws.getCell(r,c); cell.border = BR; if(fill) cell.fill = fill; }
+      const x = ws.getCell(r1,c1); x.value = val == null ? '' : val; x.font = FN(bold); x.alignment = CEN;
+    };
+    ws.mergeCells(1,1,2,NC-16);
+    const t = ws.getCell(1,1); t.value = '2027학년도 고등학교 입학전형 원서 발급 대장\n관동중학교 3학년 ' + ban + '반';
+    t.font = {name:'맑은 고딕', size:14, bold:true}; t.alignment = CEN;
+    const c0 = NC-16+1;
+    ['담임','부장','교감','교장'].forEach((nm,i) => { box(1,c0+i*4,1,c0+i*4+3,nm,true,HF); box(2,c0+i*4,2,c0+i*4+3,''); });
+    ws.getRow(1).height = 20; ws.getRow(2).height = 60; ws.getRow(3).height = 8;
+    const pos = []; let col = 1; SPANS.forEach(sp => { pos.push(col); col += sp; });
+    box(4,pos[0],5,pos[0]+1,'번호',true,HF); box(4,pos[1],5,pos[1]+2,'성명',true,HF);
+    box(4,pos[2],4,pos[4]+SPANS[4]-1,'1차 원서',true,HF); box(4,pos[5],4,pos[7]+SPANS[7]-1,'2차 원서',true,HF);
+    [2,3,4,5,6,7].forEach((p,i) => box(5,pos[p],5,pos[p]+SPANS[p]-1,['접수학교','발급일','합격여부'][i%3],true,HF));
+    box(4,pos[8],5,pos[8]+3,'담임 확인',true,HF);
+    let r = 6;
+    DATA.filter(s => String(s.ban) === String(ban)).sort((a,b) => a.num - b.num).forEach(s => {
+      const vals = [s.num, s.name, s.apply1||'', issueDateOf(s.apply1), s.result1||'', s.apply2||'', issueDateOf(s.apply2), s.result2||'', ''];
+      vals.forEach((val,i) => box(r,pos[i],r,pos[i]+SPANS[i]-1,val,false));
+      ws.getRow(r).height = 27; r++;
+    });
+    ws.pageSetup = {orientation:'portrait', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:1, horizontalCentered:true,
+      margins:{left:.4,right:.4,top:.6,bottom:.6,header:.3,footer:.3}, printTitlesRow:'4:5'};
+  });
+  wb.xlsx.writeBuffer().then(buf => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download = '2027_고입_원서발급대장' + (v === 'all' ? '_학급별' : '_' + v + '반') + '.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+}
+$('ledgerXlsx').addEventListener('click', ledgerXlsx);
 </script>
 </body>
 </html>
