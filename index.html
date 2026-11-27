@@ -228,6 +228,31 @@
     .ef-grid{ grid-template-columns:repeat(2,1fr); }
     .rs-grid{ grid-template-columns:repeat(2,1fr); }
   }
+
+  /* ---------- 원서발급대장 출력 ---------- */
+  .ledger-bar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 14px; }
+  .ledger-bar select,.ledger-bar button{ font-family:inherit; font-size:13.5px; padding:8px 14px; border-radius:3px; border:1px solid var(--ink); background:#fff; cursor:pointer; }
+  .ledger-bar button.primary{ background:var(--ink); color:#fff; }
+  #ledgerRoot{ display:none; }
+  .lg-page{ width:190mm; margin:0 auto; padding:6mm 0; page-break-after:always; color:#000; font-family:'Malgun Gothic','맑은 고딕',sans-serif; }
+  .lg-page:last-child{ page-break-after:auto; }
+  .lg-top{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5mm; }
+  .lg-title{ font-size:14.5pt; font-weight:700; line-height:1.5; }
+  .lg-title small{ display:block; font-size:12pt; font-weight:600; }
+  .lg-sign{ border-collapse:collapse; table-layout:fixed; width:80mm; flex:none; }
+  .lg-sign th,.lg-sign td{ border:1px solid #000; width:20mm; text-align:center; }
+  .lg-sign th{ background:#E7E2D3; font-size:10pt; height:6mm; }
+  .lg-sign td{ height:20mm; }
+  .lg-tbl{ border-collapse:collapse; width:100%; table-layout:fixed; font-size:10pt; }
+  .lg-tbl th,.lg-tbl td{ border:1px solid #000; text-align:center; padding:0 2px; height:7.4mm; overflow:hidden; word-break:keep-all; }
+  .lg-tbl th{ background:#E7E2D3; font-weight:700; }
+  .lg-tbl td.sch{ font-size:9pt; }
+  @media print{
+    @page{ size:A4 portrait; margin:10mm; }
+    body.printing-ledger > *:not(#ledgerRoot){ display:none !important; }
+    body.printing-ledger #ledgerRoot{ display:block !important; }
+    body.printing-ledger{ background:#fff !important; }
+  }
 </style>
 </head>
 <body>
@@ -297,6 +322,11 @@
       <div class="school-grid" id="resClassChips" style="margin-bottom:10px;"></div>
       <p class="filter-label">진행 상태</p>
       <div class="school-grid" id="resStatusChips" style="margin-bottom:6px;"></div>
+    </div>
+    <div class="ledger-bar">
+      <select id="ledgerClass"></select>
+      <button type="button" class="primary" id="ledgerPrint">원서발급대장 출력</button>
+      <span class="hint" style="margin:0;">학급별로 A4 한 장씩 인쇄됩니다. 발급일은 원서접수 시기에 맞춰 자동 입력됩니다.</span>
     </div>
     <div class="hint" style="margin-top:0;">1희망은 처음 적어 낸 희망 학교, 1차·2차는 실제로 원서를 접수한 학교와 결과, 최종은 진학이 확정된 학교입니다.</div>
     <div class="result-list" id="resultCardList"></div>
@@ -976,6 +1006,7 @@ const STATUS_LIST = [
 ];
 
 function renderResultTab(){
+  if(typeof initLedger==='function') initLedger();
   const total = DATA.length;
   const done = DATA.filter(s => statusOf(s) === 'done').length;
   const wait = DATA.filter(s => statusOf(s) === 'wait').length;
@@ -1110,6 +1141,48 @@ function renderStats(){
 if(loadCache()){ setStatus('저장된 데이터를 먼저 보여 줍니다 · 최신 데이터 확인 중…', ''); renderAll(); loadData(true); }
 else loadData(false);
 setInterval(() => { if(!adminMode) loadData(true); }, 5 * 60 * 1000);   // 5분마다 자동 새로고침 (관리자 모드에서는 쉬어요)
+
+// ---------- 원서발급대장 출력 ----------
+// 발급일: 학교 유형별 원서접수 시작일(2027학년도 경남 고입 일정 기준). 필요하면 아래 날짜만 고치면 됩니다.
+const ISSUE_DATES = { special:'2026.10.12.', foreign:'2026.12.10.', meister:'2026.11.20.', special_vo:'2026.11.20.', misc:'2026.11.20.', general:'2026.12.10.' };
+function issueDateOf(school){
+  if(!school) return '';
+  const k = catOf(school), n = normSchool(school);
+  if(k==='sp') return /외고|외국어고/.test(n) ? ISSUE_DATES.foreign : ISSUE_DATES.special;
+  if(k==='me') return ISSUE_DATES.meister;
+  if(k==='vo') return ISSUE_DATES.special_vo;
+  if(k==='et') return ISSUE_DATES.misc;
+  return ISSUE_DATES.general;           // 일반고(장유지역 학교장전형교 포함)
+}
+function ledgerHTML(ban){
+  const rows = DATA.filter(s => String(s.ban) === String(ban)).sort((a,b) => a.num - b.num);
+  const body = rows.map(s => `<tr><td>${s.num}</td><td>${esc(s.name)}</td>
+    <td class="sch">${esc(s.apply1||'')}</td><td>${issueDateOf(s.apply1)}</td><td>${esc(s.result1||'')}</td>
+    <td class="sch">${esc(s.apply2||'')}</td><td>${issueDateOf(s.apply2)}</td><td>${esc(s.result2||'')}</td><td></td></tr>`).join('');
+  return `<section class="lg-page">
+    <div class="lg-top"><div class="lg-title">2027학년도 고등학교 입학전형 원서 발급 대장<small>관동중학교 3학년 ${ban}반</small></div>
+      <table class="lg-sign"><tr><th>담임</th><th>부장</th><th>교감</th><th>교장</th></tr><tr><td></td><td></td><td></td><td></td></tr></table></div>
+    <table class="lg-tbl"><colgroup><col style="width:9mm"><col style="width:17mm"><col style="width:33mm"><col style="width:20mm"><col style="width:13mm"><col style="width:33mm"><col style="width:20mm"><col style="width:13mm"><col style="width:20mm"></colgroup>
+      <thead><tr><th rowspan="2">번호</th><th rowspan="2">성명</th><th colspan="3">1차 원서</th><th colspan="3">2차 원서</th><th rowspan="2">담임 확인</th></tr>
+      <tr><th>접수학교</th><th>발급일</th><th>합격</th><th>접수학교</th><th>발급일</th><th>합격</th></tr></thead><tbody>${body}</tbody></table></section>`;
+}
+function initLedger(){
+  const sel = $('ledgerClass'); if(!sel) return;
+  const bans = [...new Set(DATA.map(s => s.ban))].sort((a,b) => a - b);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">전체 학급 (반별로 한 장씩)</option>' + bans.map(b => `<option value="${b}">${b}반</option>`).join('');
+  if(cur) sel.value = cur;
+}
+$('ledgerPrint').addEventListener('click', () => {
+  const v = $('ledgerClass').value;
+  const bans = v === 'all' ? [...new Set(DATA.map(s => s.ban))].sort((a,b) => a - b) : [v];
+  let root = $('ledgerRoot');
+  if(!root){ root = document.createElement('div'); root.id = 'ledgerRoot'; document.body.appendChild(root); }
+  root.innerHTML = bans.map(ledgerHTML).join('');
+  document.body.classList.add('printing-ledger');
+  setTimeout(() => { window.print(); }, 50);
+});
+window.addEventListener('afterprint', () => document.body.classList.remove('printing-ledger'));
 </script>
 </body>
 </html>
