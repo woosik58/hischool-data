@@ -489,7 +489,7 @@ function catOf(school){
   if(/^각종|^대안/.test(n)) return 'et';
   if(/마이스터/.test(n)) return 'me';
   if(/생명과학|해양과학|한국과학기술/.test(n)) return 'vo';                    // '과학고'보다 먼저(특성화고)
-  if(/외고|외국어고|과학고|과고|예술고|국제고|체육고|^예고$|^체고$/.test(n)) return 'sp';
+  if(/외고|외국어고|과학고|과고|예술고|국제고|체육고|예고$|체고$/.test(n)) return 'sp';
   if(/공고|공업|상고|여상|관광고|항공고|조리|컴퓨터|건설|정보고|산업고|기계|보건|로봇|자동차|간호|승강기|인공지능/.test(n)) return 'vo';
   if(/연극|음악고|영화고|보물섬|기술학교|각종/.test(n)) return 'et';
   if(/고$/.test(n)) return 'ge';                                              // 나머지 '~고'는 일반고
